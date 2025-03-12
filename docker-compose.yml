@@ -1,0 +1,54 @@
+services:
+  # Service principal pour l'application Nuxt
+  nuxt-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nuxt-terminal-lab
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - HOST=0.0.0.0
+    networks:
+      - nuxt-network
+    depends_on:
+      - terminal-service
+
+  # Service backend pour la simulation de terminal
+  terminal-service:
+    build:
+      context: ./terminal-backend
+      dockerfile: Dockerfile
+    container_name: terminal-service
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./terminal-backend:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - NODE_ENV=development
+    networks:
+      - nuxt-network
+    # Configuration pour limiter les ressources et ajouter de la sécurité
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    # Limites de ressources pour éviter les abus
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+networks:
+  nuxt-network:
+    driver: bridge
